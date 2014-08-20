@@ -39,7 +39,6 @@
     <script src="js/jquery.flot.time.js"></script>
     <script src="js/jquery.flot.stack.js"></script>
     <script src="js/jquery.flot.axislabels.js"></script>
-    <script src="js/jquery.flot.hiddengraphs.js"></script>
     <script src="js/jquery.flot.navigate.js"></script>
     <script src="js/common.js"></script>
     <script src="js/index.js"></script>
@@ -90,37 +89,48 @@
   </script>
 
   <script id="graphDatapoint" type="text/html">
-    <div class="well">
-      <video id="video" src="{{videoURL}}" controls></video>
-      <dl>
-        <dt>Build Date</dt>
-        <dd>{{date}}</dd>
+      <div id="data-annotation" class="well">
+        <div id="datapoint-viewer">
+          <dl>
+            <dt>Build Date</dt>
+            <dd>{{date}}</dd>
 
-        {{#revisionInfoList}}
-        <dt>{{title}}</dt>
-        <a href="{{revisionHref}}" target="_blank">{{revision}}</a>
-        {{#pushlogHref}}
-        (<a href="{{pushlogHref}}" target="_blank">pushlog</a>)
-        {{/pushlogHref}}
-        {{/revisionInfoList}}
+            {{#revisionInfoList}}
+            <dt>{{title}}</dt>
+            <a href="{{revisionHref}}" target="_blank">{{revision}}</a>
+            {{#pushlogHref}}
+            (<a href="{{pushlogHref}}" target="_blank">pushlog</a>)
+            {{/pushlogHref}}
+            {{/revisionInfoList}}
 
-        {{#buildId}}
-        <dt>Build Id</dt>
-        <dd>{{buildId}}</dd>
-        {{/buildId}}
-        <dt>{{measureName}}</dt>
-        <dd>{{measureValue}}</dd>
-      </dl>
-      {{#profileURL}}
-      <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}" target="_blank">View SPS profile</a></p>
-      {{/profileURL}}
-      {{#defaultDetailParameter}}
-      <p><a href="detail.html?id={{uuid}}#/{{defaultDetailParameter}}" target="_blank">Detail view</a></p>
-      {{/defaultDetailParameter}}
-      {{#httpLog}}
-      <p><a href="httplog.html?id={{uuid}}" target="_blank">HTTP Request Log</a></p>
-      {{/httpLog}}
-    </div>
+            {{#buildId}}
+            <dt>Build Id</dt>
+            <dd>{{buildId}}</dd>
+            {{/buildId}}
+            <dt>Average {{measureName}}</dt>
+            <dd>{{measureValue}}</dd>
+          </dl>
+          <div id="datapoint-replicates">
+          </div>
+          <p class="help-block">Click on the bar for each replicate (test) to get more information below.</p>
+        </div>
+        <div id="replicate-viewer">
+        </div>
+      </div>
+  </script>
+  <script id="replicateDetail" type="text/html">
+    <hr/>
+    <h4>Replicate #{{index}}: {{value}}</h4>
+    <video id="video" src="{{videoURL}}" controls></video>
+    {{#profileURL}}
+    <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}" target="_blank">View SPS profile</a></p>
+    {{/profileURL}}
+    {{#defaultDetailParameter}}
+    <p><a href="detail.html?id={{uuid}}#/{{defaultDetailParameter}}" target="_blank">Detail view</a></p>
+    {{/defaultDetailParameter}}
+    {{#httpLog}}
+    <p><a href="httplog.html?id={{uuid}}" target="_blank">HTTP Request Log</a></p>
+    {{/httpLog}}
   </script>
   </body>
 </html>

@@ -108,6 +108,10 @@
     padding: 20px;
 }
 
+#replicate-viewer {
+    display: none;
+}
+
 footer {
     padding: 40px;
 }

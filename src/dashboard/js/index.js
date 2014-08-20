@@ -105,12 +105,7 @@ function updateContent(testInfo, dashboardId, deviceId, branchId, testId, measur
 }
 
 function updateGraph(title, rawdata, measureId) {
-  // show individual data points
   var graphdata = [];
-  var color = 0;
-  var uuidHash = {};
-
-  var seriesIndex = 0;
 
   // get global maximum date (for baselining)
   var globalMaxDate = 0;
@@ -120,41 +115,19 @@ function updateGraph(title, rawdata, measureId) {
   });
 
   var products = Object.keys(rawdata).sort();
-
+  var color = 0;
+  var seriesIndex = 0;
+  var pointDetailMap = {};
   products.forEach(function(product) {
-    uuidHash[seriesIndex] = [];
+    pointDetailMap[seriesIndex] = [];
 
-    // point graph
-    var series1 = {
+    // line graph (aggregate average per day + baseline results if appropriate)
+    var series = {
       label: product,
+      lines: { show: true },
       points: { show: true },
       color: color,
       data: []
-    };
-
-    Object.keys(rawdata[product]).sort().forEach(function(timestamp) {
-      rawdata[product][timestamp].forEach(function(sample) {
-        if (measureId in sample) {
-          series1.data.push([ parseTimestamp(timestamp), sample[measureId] ]);
-          var sourceRepo = sample.sourceRepo;
-          if (!sourceRepo) {
-            sourceRepo = "http://hg.mozilla.org/mozilla-central";
-          }
-          uuidHash[seriesIndex].push(sample.uuid);
-        }
-      });
-    });
-    graphdata.push(series1);
-
-    var dates = series1.data.map(function(d) { return d[0]; });
-
-    // line graph (aggregate average per day + baseline results if appropriate)
-    var series2 = {
-      lines: { show: true },
-      color: color,
-      data: [],
-      clickable: false,
-      hoverable: false
     };
 
     var lastSample;
@@ -170,27 +143,26 @@ function updateGraph(title, rawdata, measureId) {
         }
       });
       lastData = [parseTimestamp(timestamp), total/numSamples];
-      series2.data.push(lastData);
+      series.data.push(lastData);
+      pointDetailMap[seriesIndex].push({ 'product': product, 'timestamp': timestamp });
     });
     // if last sample was a baseline and there's a great data, extend
     // the baseline of the graph up to today
     if (lastSample.baseline === true && lastData[0] < globalMaxDate) {
-      series2.data.push([globalMaxDate, lastData[1]]);
+      series.data.push([globalMaxDate, lastData[1]]);
     }
-    graphdata.push(series2);
+    graphdata.push(series);
 
     color++;
-    seriesIndex += 2;
+    seriesIndex++;
   });
 
-  function updateDataPointDisplay(uuid, date, measureName, series) {
-    $.getJSON(getResourceURL('metadata/' + uuid + '.json'), function(metadata) {
-      function revisionSlice(str) {
-          return str.slice(0, 12);
-      }
+  function updateDataPointDisplay(pointDetail, date, measureName, measureValue, series) {
+    var replicates = rawdata[pointDetail.product][pointDetail.timestamp];
+    var firstUUID = replicates[0].uuid;
 
+    $.getJSON(getResourceURL('metadata/' + firstUUID + '.json'), function(metadata) {
       function updateDataPoint(prevMetadata) {
-        var defaultDetailParameter = getDefaultDetailParameter(measureName, metadata);
         var revisionInfoList = [];
         [
           { 'title': 'Gecko Revision',
@@ -210,7 +182,7 @@ function updateGraph(title, rawdata, measureId) {
             var revisionProperty = revisionType.revisionProperty;
             var revisionInfo = {
               'title': revisionType.title,
-              'revision': revisionSlice(metadata[revisionProperty]) };
+              'revision': metadata[revisionProperty].slice(0, 12) };
             if (revisionType.repotype === 'hg') {
               revisionInfo.revisionHref = revisionType.repoURL +
                 "/rev/" + metadata[revisionProperty];
@@ -234,20 +206,65 @@ function updateGraph(title, rawdata, measureId) {
             revisionInfoList.push(revisionInfo);
           }
         });
-        $('#graph-annotation').html(ich.graphDatapoint({ 'uuid': uuid,
-                                                       'videoURL': getResourceURL(metadata.video),
-                                                       'profileURL': metadata.profile,
-                                                       'defaultDetailParameter': defaultDetailParameter,
-                                                       'httpLog': metadata.httpLog ? true : false,
-                                                       'measureName': measureName,
-                                                       'date': getDateStr(metadata.appdate * 1000),
-                                                       'metadata': metadata,
-                                                       'revisionInfoList': revisionInfoList,
-                                                       'buildId': metadata.buildId,
-                                                       'measureValue': Math.round(100.0*metadata['metrics'][measureName])/100.0
-                                                     }));
+        $('#graph-annotation').html(ich.graphDatapoint(
+          { 'measureName': measureName,
+            'date': getDateStr(metadata.appdate * 1000),
+            'metadata': metadata,
+            'revisionInfoList': revisionInfoList,
+            'buildId': metadata.buildId,
+            'measureValue': measureValue
+          }));
 
-        $('#video').css('width', $('#video').parent().width());
+        var series = {
+          bars: { show: true },
+          data: []
+        };
+        var i=0;
+        replicates.forEach(function(replicate) {
+          series.data.push([i, replicate[measureName]]);
+          i++;
+        });
+        console.log(series);
+        var plot = $.plot($("#datapoint-replicates"), [series], {
+          xaxis: { show: false },
+          grid: { clickable: true,
+                  hoverable: true }
+        });
+
+        $("#datapoint-replicates").bind("plothover", function (event, pos, item) {
+          $("#tooltip").remove();
+          if (item) {
+            showTooltip(item.pageX, item.pageY, 'Replicate #' + item.datapoint[0] + ' = ' +
+                        item.datapoint[1].toFixed(2));
+          }
+        });
+
+        $("#datapoint-replicates").bind("plotclick", function (event, pos, item) {
+          plot.unhighlight();
+          if (item) {
+            var index = item.datapoint[0];
+            var replicate = replicates[index];
+            $.getJSON(getResourceURL('metadata/' + replicate.uuid + '.json'),
+                      function(metadata) {
+                        var defaultDetailParameter = getDefaultDetailParameter(
+                          measureName, metadata);
+                        $('#replicate-viewer').html(ich.replicateDetail({
+                          'index': index,
+                          'value': item.datapoint[1].toFixed(2),
+                          'uuid': replicate.uuid,
+                          'videoURL': getResourceURL(metadata.video),
+                          'profileURL': metadata.profile,
+                          'defaultDetailParameter': defaultDetailParameter,
+                          'httpLog': metadata.httpLog ? true : false
+                        }));
+                        $('#replicate-viewer').show();
+                        $('#video').css('width', $('#video').parent().width());
+                      });
+            plot.highlight(item.series, item.datapoint);
+          } else {
+            $('#replicate-viewer').hide();
+          }
+        });
       }
 
       // try to find the previous revision
@@ -297,50 +314,23 @@ function updateGraph(title, rawdata, measureId) {
       plot.zoomOut();
     });
 
-    function showTooltip(x, y, contents) {
-      $('<div id="tooltip">' + contents + '</div>').css( {
-        position: 'absolute',
-        display: 'none',
-        top: y + 5,
-        left: x + 5,
-        border: '1px solid #fdd',
-        padding: '2px',
-        'background-color': '#fee',
-        opacity: 0.80
-      }).appendTo("body").fadeIn(200);
-    }
-
-    // Plot Hover tooltip
-    var previousPoint = null;
     $("#graph-container").bind("plothover", function (event, pos, item) {
+      $("#tooltip").remove();
       if (item) {
-        if (previousPoint != item.dataIndex) {
-          var toolTip;
-          var x = item.datapoint[0].toFixed(2),
-          y = item.datapoint[1].toFixed(2);
-
-          if (uuidHash[item.seriesIndex] && uuidHash[item.seriesIndex][item.dataIndex]) {
-            toolTip = (item.series.label || item.series.hoverLabel) + " of " + getDateStr(item.datapoint[0]) + " = " + y;
-          } else {
-            toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
-          }
-
-          previousPoint = item.dataIndex;
-
-          $("#tooltip").remove();
-          showTooltip(item.pageX, item.pageY, toolTip);
-        }
-      } else {
-        $("#tooltip").remove();
-        previousPoint = null;
+        var toolTip;
+        var x = item.datapoint[0].toFixed(2);
+        var y = item.datapoint[1].toFixed(2);
+        toolTip = (item.series.label || item.series.hoverLabel) + " of " + getDateStr(item.datapoint[0]) + " = " + y;
+        showTooltip(item.pageX, item.pageY, toolTip);
       }
     });
 
     $("#graph-container").bind("plotclick", function (event, pos, item) {
       plot.unhighlight();
       if (item) {
-        var uuid = uuidHash[item.seriesIndex][item.dataIndex];
-        updateDataPointDisplay(uuid, item.datapoint[0], measureId, item.series);
+        var pointDetail = pointDetailMap[item.seriesIndex][item.dataIndex];
+        updateDataPointDisplay(pointDetail, item.datapoint[0], measureId,
+                               item.datapoint[1].toFixed(2), item.series);
         plot.highlight(item.series, item.datapoint);
       } else {
         $('#graph-annotation').html(null);
