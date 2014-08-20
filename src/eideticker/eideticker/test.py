@@ -348,7 +348,7 @@ class AndroidWebTest(WebTest):
         self.profile_filename = profile_filename
         self.gecko_profiler_addon_dir = options.gecko_profiler_addon_dir
         self.preinitialize_user_profile = bool(
-            testinfo.get('preInitializeProfile'))
+            int(testinfo.get('preInitializeProfile')))
         self.open_url_after_launch = bool(testinfo.get('openURLAfterLaunch'))
 
         # If we're logging checkerboard stats, set that up here (seems like it
