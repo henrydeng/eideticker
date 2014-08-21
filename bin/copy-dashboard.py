@@ -10,7 +10,7 @@ import sys
 import urlparse
 
 exit_status = 0
-MAX_WORKERS = 8
+MAX_WORKERS = 4
 
 def save_file(filename, content):
     open(filename, 'wo').write(content)
