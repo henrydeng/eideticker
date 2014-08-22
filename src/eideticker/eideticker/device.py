@@ -98,7 +98,7 @@ DEVICE_PROPERTIES = {
     }
 }
 
-ORANGUTAN = "orangtuan"
+ORANGUTAN = "orangutan"
 NTPCLIENT = "ntpclient"
 
 class EidetickerMixin(object):
