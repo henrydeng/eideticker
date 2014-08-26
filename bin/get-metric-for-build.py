@@ -36,14 +36,16 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         eideticker.prepare_test(testname, options)
 
     for i in range(options.num_runs):
+        # get a uuid for the run
+        test_uuid = uuid.uuid1().hex
+
         # Now run the test
         curtime = int(time.time())
         capture_file = os.path.join(CAPTURE_DIR,
                                     "metric-test-%s-%s.zip" % (appname,
                                                                curtime))
         if options.enable_profiling and options.outputdir:
-            profile_relpath = os.path.join(
-                'profiles', 'sps-profile-%s.zip' % time.time())
+            profile_relpath = os.path.join('profiles', '%s.zip' % test_uuid)
             profile_filename = os.path.join(options.outputdir, profile_relpath)
         else:
             profile_filename = None
@@ -57,8 +59,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
                                       profile_filename=profile_filename,
                                       capture_name=capture_name)
 
-        capture_uuid = uuid.uuid1().hex
-        datapoint = { 'uuid': capture_uuid }
+        datapoint = { 'uuid': test_uuid }
         metadata = {}
         metrics = {}
 
@@ -80,12 +81,9 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
             metadata.update(eideticker.get_standard_metric_metadata(capture))
 
             if options.outputdir:
-                # video
-                video_relpath = os.path.join(
-                    'videos', 'video-%s.webm' % time.time())
-                video_path = os.path.join(options.outputdir, video_relpath)
+                video_path = os.path.join(options.outputdir, 'videos',
+                                          '%s.webm' % test_uuid)
                 open(video_path, 'w').write(capture.get_video().read())
-                metadata['video'] = video_relpath
 
         if options.log_checkerboard_stats:
             metrics['internalcheckerboard'] = \
@@ -95,13 +93,13 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         datapoint.update(metrics)
 
         if options.enable_profiling:
-            metadata['profile'] = profile_filename
+            metadata['hasProfile'] = True
 
         # dump metadata
         if options.outputdir:
             # metadata
             metadata_path = os.path.join(options.outputdir, 'metadata',
-                                         '%s.json' % capture_uuid)
+                                         '%s.json' % test_uuid)
             open(metadata_path, 'w').write(json.dumps(metadata))
 
         capture_results.append(datapoint)

@@ -30,12 +30,12 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
                                                          appinfo.get('appdate'),
                                                          int(time.time())))
     productname = product['name']
+    test_uuid = uuid.uuid1().hex
 
     if options.enable_profiling:
         productname += "-profiling"
-        profile_path = os.path.join(
-            'profiles', 'sps-profile-%s.zip' % time.time())
-        profile_filename = os.path.join(options.dashboard_dir, profile_path)
+        profile_filename = os.path.join(options.dashboard_dir, 'profiles',
+                                        '%s.zip' % test_uuid)
     else:
         profile_filename = None
 
@@ -63,22 +63,12 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
                                        "tries). Aborting." % (testinfo['key'],
                                                               productname))
 
-    if options.capture:
-        capture = videocapture.Capture(capture_filename)
-
-        # video file
-        video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
-        video_path = os.path.join(options.dashboard_dir, video_relpath)
-        open(video_path, 'w').write(capture.get_video().read())
-    else:
-        video_relpath = None
-
     # app/product date
     appdate = appinfo['appdate']
 
-    datapoint = { 'uuid': uuid.uuid1().hex }
-    metadata =  { 'video': video_relpath, 'appdate': appdate,
-                  'label': options.capture_name }
+    datapoint = { 'uuid': test_uuid }
+    metadata =  { 'appdate': appdate, 'label': options.capture_name,
+                  'hasProfile': bool(options.enable_profiling) }
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
                 'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
@@ -93,6 +83,13 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
 
     metrics = {}
     if options.capture:
+        capture = videocapture.Capture(capture_filename)
+
+        # video file
+        video_relpath = os.path.join('videos', '%s.webm' % test_uuid)
+        video_path = os.path.join(options.dashboard_dir, video_relpath)
+        open(video_path, 'w').write(capture.get_video().read())
+
         if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
                 testinfo['defaultMeasure'] == 'timetostableframe':
             metrics['timetostableframe'] = eideticker.get_stable_frame_time(
@@ -105,9 +102,6 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
 
     datapoint.update(metrics)
     metadata['metrics'] = metrics
-
-    if options.enable_profiling:
-        metadata['profile'] = profile_path
 
     # add logs (if any) to test metadata. we log http requests for webstartup
     # tests only. likewise, we log actions only for web tests and b2g tests

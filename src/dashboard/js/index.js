@@ -252,8 +252,8 @@ function updateGraph(title, rawdata, measureId) {
                           'index': index,
                           'value': item.datapoint[1].toFixed(2),
                           'uuid': replicate.uuid,
-                          'videoURL': getResourceURL(metadata.video),
-                          'profileURL': metadata.profile,
+                          'videoURL': getResourceURL('videos/' + replicate.uuid + '.webm'),
+                          'profileURL': replicate.hasProfile ? getResourceURL('profiles/' + replicate.uuid + '.zip') : null,
                           'defaultDetailParameter': defaultDetailParameter,
                           'httpLog': metadata.httpLog ? true : false
                         }));

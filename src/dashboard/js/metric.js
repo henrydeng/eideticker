@@ -84,7 +84,7 @@ function updateGraph(rawdata, measureId) {
 
         $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
                                                        'date': null,
-                                                       'videoURL': metadata.video,
+                                                       'videoURL': 'videos/' + uuid + '.webm',
                                                        'measureName': measureId,
                                                        'appDate': metadata.appDate,
                                                        'revision': metadata.revision,
