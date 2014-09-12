@@ -14,6 +14,11 @@ analyzes browser output via HDMI or an external camera.
   known not to work with the PointGrey cameras). Later versions
   of Ubuntu are probably also fine.
 
+  If you wish to enable gecko profiler support, you will also need to download
+  and install szip and addr2lines into your path. You can get szip from
+  http://people.mozilla.com/~bgirard/szip/linux/szip and add2rline from
+  https://people.mozilla.com/~nchen/arm-eabi-addr2line.tar.bz2
+
 * A supported mobile phone running Firefox OS or Android. Your phone must be
   connected to the same network as the machine running the tests. In the case
   of Android, it is currently required that your device be rooted and must be
