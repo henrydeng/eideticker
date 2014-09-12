@@ -55,16 +55,19 @@ def download_file(url, filename):
         return
     open(filename, 'w').write(r.content)
 
-def download_metadata(url, baseurl, filename, options, videodir, profiledir):
-    r = requests.get(url)
+def download_metadata(baseurl, uuid, options, metadatadir, videodir, profiledir):
+    metadata_url = urljoin(baseurl, 'metadata', "%s.json" % uuid)
+    metadata_filename = os.path.join(metadatadir, "%s.json" % uuid)
+
+    r = requests.get(metadata_url)
     if not validate_json_response(r):
         return
 
     metadata = r.json()
-    videourl = baseurl + metadata['video']
+    videourl = urljoin(baseurl, 'videos', '%s.webm' % uuid)
     profileurl = None
-    if metadata.get('profile'):
-        profileurl = baseurl + metadata['profile']
+    if metadata.get('hasProfile'):
+        profileurl = urljoin(baseurl, 'profiles', '%s.zip' % uuid)
     if options.full_mirror:
         download_file(videourl,
                       os.path.join(videodir, os.path.basename(metadata['video'])))
@@ -72,12 +75,7 @@ def download_metadata(url, baseurl, filename, options, videodir, profiledir):
             download_file(profileurl,
                           os.path.join(profiledir,
                                        os.path.basename(metadata['profile'])))
-    elif options.rewrite_metadata:
-        # make it relative
-        metadata['video'] = videourl
-        if profileurl:
-            metadata['profile'] = profileurl
-    save_file(filename, json.dumps(metadata))
+    save_file(metadata_filename, json.dumps(metadata))
 
 def download_testdata(url, baseurl, filename, options, metadatadir,
                       videodir, profiledir):
@@ -95,14 +93,8 @@ def download_testdata(url, baseurl, filename, options, metadatadir,
                 for datapoint in testdata[appname][date]:
                     uuid = datapoint['uuid']
                     if options.download_metadata:
-                        metadata_filename = "%s.json" % uuid
-                        executor.submit(download_metadata,
-                                        urljoin(baseurl, 'metadata',
-                                                metadata_filename),
-                                        baseurl,
-                                        os.path.join(metadatadir,
-                                                     metadata_filename),
-                                        options, videodir,
+                        executor.submit(download_metadata, baseurl,
+                                        uuid, options, metadatadir, videodir,
                                         profiledir)
 
 usage = "usage: %prog [options] <url> <output directory>"
@@ -120,10 +112,6 @@ parser.add_option("--device-id", action="store",
                   dest="device_id",
                   help="Only download information for device id (must be used "
                   "in conjunction with --dashboard-id)")
-parser.add_option("--rewrite-metadata", action="store_true",
-                  dest="rewrite_metadata", default=False,
-                  help="Rewrite metadata to use absolute URLs to original "
-                  "source (never done if using --full-mirror)")
 options, args = parser.parse_args()
 
 if len(args) != 2:
