@@ -222,7 +222,8 @@ $(function() {
     });
   }
 
-  $.getJSON('metadata/' + getParameterByName('id') + '.json', function(metadata) {
+  var uuid = getParameterByName('id');
+  $.getJSON('metadata/' + uuid + '.json', function(metadata) {
     var title = metadata.label;
     if (!title) {
       title = "Frame difference view";
@@ -235,7 +236,7 @@ $(function() {
     var routes = {
       '/:measureId': {
         on: function(measureId) {
-          $('#maincontent').html(ich.pageContent({ 'videoPath': metadata.video,
+          $('#maincontent').html(ich.pageContent({ 'videoPath': 'videos/' + uuid + '.webm',
                                                    'measures': measureDisplayList(availableMeasureIds,
                                                                                   perFrameMeasures),
                                                    'measureDescription': perFrameMeasures[measureId].longDesc
