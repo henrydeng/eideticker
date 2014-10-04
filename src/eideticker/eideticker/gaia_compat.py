@@ -40,9 +40,5 @@ window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
                 'return window.wrappedJSObject.b2g_ready;', new_sandbox=False))
             time.sleep(5)
         else:
-            from gaiatest import GaiaData
-            GaiaData(marionette).set_setting(
-                'homescreen.manifestURL',
-                'app://homescreen.gaiamobile.org/manifest.webapp')
             Wait(marionette, timeout).until(expected.element_present(
                 By.CSS_SELECTOR, '#homescreen[loading-state=false]'))

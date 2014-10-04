@@ -17,7 +17,6 @@ import urlparse
 
 from gaiatest.gaia_test import GaiaApps
 
-from marionette.errors import NoSuchElementException
 from marionette.by import By
 from marionette.wait import Wait
 
@@ -554,39 +553,16 @@ class B2GAppStartupTest(B2GAppTest):
         # workaround flame not processing input events properly
         self.device.executeCommands([['swipe_right']])
 
-        try:
-            # look for the application icon in the dock first
-            self.logger.info('Looking for app icon in dock')
-            appicon = self.device.marionette.find_element(
-                By.CSS_SELECTOR,
-                '#footer .icon[aria-label="%s"]' % self.appname)
-        except NoSuchElementException:
-            # skip the everything.me page
-            self.device.marionette.execute_async_script(
-                'return window.wrappedJSObject.GridManager.goToPage(1, marionetteScriptFinished);')
-            page_count = self.device.marionette.execute_script(
-                'return window.wrappedJSObject.GridManager.pageHelper.getTotalPagesNumber();')
-            for i in range(1, page_count):
-                current_page = self.device.marionette.find_element(
-                    By.CSS_SELECTOR, '#icongrid .page:not([aria-hidden=true])')
-                try:
-                    self.logger.info('Looking for app icon on page %s' % (i + 1))
-                    appicon = current_page.find_element(
-                        By.CSS_SELECTOR, '.icon[aria-label="%s"]' %
-                        self.appname)
-                    break
-                except NoSuchElementException:
-                    current_page_index = self.device.marionette.execute_script(
-                        'return window.wrappedJSObject.GridManager.pageHelper.getCurrentPageNumber();')
-                    if current_page_index < (page_count - 1):
-                        self.device.marionette.execute_script(
-                            'window.wrappedJSObject.GridManager.goToNextPage();')
-                        Wait(self.device.marionette).until(
-                            lambda m: m.find_element(By.TAG_NAME, 'body').get_attribute(
-                                'data-transitioning') != 'true')
-                    else:
-                        raise TestException("Cannot find icon for app with name "
-                                            "'%s'" % self.appname)
+        icons = self.device.marionette.find_elements(
+            By.CSS_SELECTOR, 'gaia-grid .icon:not(.placeholder)')
+        for icon in icons:
+            if icon.text == self.appname:
+                self.device.marionette.execute_script(
+                    'arguments[0].scrollIntoView(false);', [icon])
+                appicon = icon
+        if appicon is None:
+            raise TestException("Cannot find icon for app with name "
+                                "'%s'" % self.appname)
 
         tap_x = appicon.location['x'] + (appicon.size['width'] / 2)
         tap_y = appicon.location['y'] + (appicon.size['height'] / 2)
