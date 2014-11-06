@@ -160,6 +160,6 @@ def update_dashboard_testdata(dashboard_dir, dashboard_id, device_id,
 def upload_dashboard(options):
     print 'Uploading dashboard to %s' % options.dashboard_server
     subprocess.check_call([
-        'rsync', '-avz', '--copy-links', '-e', 'ssh', options.dashboard_dir,
+        'rsync', '-avz', '--bwlimit=1280''--copy-links', '-e', 'ssh', options.dashboard_dir,
             '%s@%s:%s' % (options.dashboard_user, options.dashboard_server,
                           options.dashboard_remote_path)])
