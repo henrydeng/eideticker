@@ -107,14 +107,17 @@ parser.add_option("--skip-metadata", action="store_false",
                   help="Skip downloading metadata JSON files")
 parser.add_option("--dashboard-id", action="store",
                   dest="dashboard_id",
-                  help="Only download information for dashboard id")
+                  help="Only download information for dashboard id",
+                  default=os.environ.get('DASHBOARD_ID'))
 parser.add_option("--device-id", action="store",
                   dest="device_id",
                   help="Only download information for device id (must be used "
-                  "in conjunction with --dashboard-id)")
-parser.add_option("--branch-id", action="store",
+                  "in conjunction with --dashboard-id)",
+                  default=os.environ.get('DEVICE_ID'))
+parser.add_option("--branch", action="store",
                   dest="branch_id",
-                  help="Only download information for branch id")
+                  help="Only download information for branch id",
+                  default=os.environ.get('BRANCH'))
 options, args = parser.parse_args()
 
 if len(args) != 2:
