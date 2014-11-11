@@ -112,6 +112,9 @@ parser.add_option("--device-id", action="store",
                   dest="device_id",
                   help="Only download information for device id (must be used "
                   "in conjunction with --dashboard-id)")
+parser.add_option("--branch-id", action="store",
+                  dest="branch_id",
+                  help="Only download information for branch id")
 options, args = parser.parse_args()
 
 if len(args) != 2:
@@ -175,7 +178,15 @@ with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
             deviceids = devices.keys()
 
         for deviceid in deviceids:
-            for branchid in devices[deviceid]['branches']:
+            branch_ids = devices[deviceid]['branches']
+            if options.branch_id:
+                if options.branch_id in branch_ids:
+                    branch_ids = [ options.branch_id ]
+                else:
+                    print("Branch '%s' specified but device id '%s' does not "
+                          "have it. Skipping." % (options.branch_id, deviceid))
+                    branch_ids = []
+            for branchid in branch_ids:
                 r = requests.get(urljoin(baseurl, dashboard_id, deviceid,
                                          branchid, 'tests.json'))
                 if not validate_json_response(r):
