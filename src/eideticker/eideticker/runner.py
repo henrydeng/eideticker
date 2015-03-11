@@ -124,7 +124,7 @@ class AndroidBrowserRunner(object):
 
         preferences = {'gfx.show_checkerboard_pattern': False,
                        'browser.firstrun.show.uidiscovery': False,
-                       'layers.low-precision-buffer': False,  # bug 815175
+                       'layers.low-precision-opacity': 0, # bug 1140019
                        'toolkit.telemetry.prompted': 2,
                        'toolkit.telemetry.rejected': True,
                        'browser.snippets.enabled': False,
